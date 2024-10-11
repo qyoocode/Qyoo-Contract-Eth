@@ -148,6 +148,25 @@ contract Qyoo is ERC721A, ERC721ABurnable, Ownable, Pausable, ReentrancyGuard {
         }
     }
 
+    // Owner-only function to extend a token's expiration
+    function extendTokenExpiration(uint256 tokenId, uint256 daysToAdd) external onlyOwner {
+        require(_exists(tokenId), "Token does not exist");
+
+        // Get current expiration
+        uint256 currentExpiration = _tokenInfo[tokenId].expirationTimestamp;
+
+        // If token has lifetime ownership (expirationTimestamp == 0), we shouldn't add time
+        require(currentExpiration != 0, "Token has lifetime ownership");
+
+        // Calculate the additional time in seconds
+        uint256 additionalTime = daysToAdd * 1 days;
+
+        // Update the expiration timestamp
+        _tokenInfo[tokenId].expirationTimestamp = currentExpiration + additionalTime;
+
+        emit TokenExpirationExtended(tokenId, _tokenInfo[tokenId].expirationTimestamp);
+    }
+
     // Internal mint function
     function _mintToken(
         address to,

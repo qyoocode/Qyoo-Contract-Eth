@@ -1,31 +1,5 @@
 # Qyoo NFT Smart Contract
 
-## Table of Contents
-
-- [Introduction](#introduction)
-- [Contract Overview](#contract-overview)
-  - [Key Features](#key-features)
-  - [Token Types](#token-types)
-- [Contract Details](#contract-details)
-  - [Dependencies](#dependencies)
-  - [State Variables](#state-variables)
-  - [Structs](#structs)
-  - [Events](#events)
-  - [Modifiers](#modifiers)
-- [Functions](#functions)
-  - [Minting Functions](#minting-functions)
-  - [Token Management Functions](#token-management-functions)
-  - [Administrative Functions](#administrative-functions)
-  - [Utility Functions](#utility-functions)
-- [Usage Instructions](#usage-instructions)
-  - [Prerequisites](#prerequisites)
-  - [Compilation](#compilation)
-  - [Deployment](#deployment)
-  - [Interacting with the Contract](#interacting-with-the-contract)
-- [Migration Plan](#migration-plan)
-- [Security Considerations](#security-considerations)
-- [License](#license)
-
 ## Introduction
 
 The **Qyoo NFT Smart Contract** is a Solidity-based smart contract that implements an ERC721A token with extended functionalities tailored for the Qyoo platform. The contract allows users to mint unique NFTs that correspond to scannable codes, enabling dynamic content sharing and interaction through the Qyoo app.
