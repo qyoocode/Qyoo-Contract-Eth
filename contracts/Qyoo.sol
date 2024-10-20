@@ -1,31 +1,32 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "erc721a/contracts/ERC721A.sol";  // ERC721A for efficient batch minting
-import "erc721a/contracts/extensions/ERC721ABurnable.sol"; // Import the burnable extension
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";        // Provides basic access control mechanisms, assigning an owner who can execute privileged operations
+import "erc721a/contracts/ERC721A.sol";                     // Offers a gas-efficient implementation of the ERC721 standard, optimized for minting multiple tokens in a single transaction
+import "erc721a/contracts/extensions/ERC721ABurnable.sol";  // Adds functionality to allow token holders to permanently destroy (burn) their tokens
+import "@openzeppelin/contracts/utils/Pausable.sol";        // Enables the contract to be paused and unpaused by authorized accounts, halting certain functions during emergencies
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol"; // Protects against reentrancy attacks by preventing nested calls to functions marked as `nonReentrant`
+import "@openzeppelin/contracts/utils/Strings.sol";         // Utility library that provides functions for converting numeric types to strings and other string operations
 
 contract Qyoo is ERC721A, ERC721ABurnable, Ownable, Pausable, ReentrancyGuard {
+    using Strings for uint256;
+
+    uint public current_total = 0;
     uint256 public constant MAX_SUPPLY = (2**36) - 1;  // 2^(6*6) - 1
 
     uint public basic_max  = 400;
-    uint public random_max = 200;
-
-    uint public total_supply = 0;
-
     uint256 public basic_price  = 0.001 ether;
     uint256 public random_price = 0.01 ether;
     uint256 public custom_price = 0.1 ether;
+
     uint256 public lifetime_fee = 1 ether;
-    uint256 public renewalFee   = 0.05 ether;
+    uint256 public renewalFee   = 0.005 ether;
 
     uint256 public basicExpiration  = 365 days;   // 1 year
     uint256 public randomExpiration = 1095 days;  // 3 years
     uint256 public customExpiration = 1825 days;  // 5 years
 
-    address public withdrawalAddress = 0x22450dbBFDE977A619eFDc47fD26867a4F97eded;
+    address public withdrawalAddress = 0x16c492207a0a6758A2FfBb1984A5C517A3e5479A;
 
     struct TokenInfo {
         string url;
@@ -42,8 +43,9 @@ contract Qyoo is ERC721A, ERC721ABurnable, Ownable, Pausable, ReentrancyGuard {
     event TokenMinted(address indexed owner, uint256 indexed tokenId, uint256 expirationTimestamp);
     event TokenRenewed(address indexed owner, uint256 indexed tokenId, uint256 newExpirationTimestamp);
     event TokenReclaimed(uint256 indexed tokenId);
+    event TokenExpirationExtended(uint256 indexed tokenId, uint256 newExpirationTimestamp);
 
-    constructor() ERC721A("qyoo 2d barcode token", "QYOO") {}
+    constructor() ERC721A("Qyoo 2d barcode token", "QYOO") Ownable(msg.sender) {}
 
     // Modifier to check if token is valid (not expired)
     modifier onlyValidToken(uint256 tokenId) {
@@ -56,11 +58,11 @@ contract Qyoo is ERC721A, ERC721ABurnable, Ownable, Pausable, ReentrancyGuard {
     function mintBasicToken(
         string memory name,
         string memory url,
-        string memory icon,
+        string memory icon, // FIXME: remove this, make it hard-coded based on a owner changeable uri prefix
         string memory description,
         bool isLifetime
     ) external payable whenNotPaused {
-        require(total_supply < basic_max, "Max basic tokens reached");
+        require(current_total < basic_max, "Max basic tokens reached");
 
         uint256 price = basic_price + (isLifetime ? lifetime_fee : 0);
         require(msg.value >= price, "Insufficient ETH for minting");
@@ -83,8 +85,6 @@ contract Qyoo is ERC721A, ERC721ABurnable, Ownable, Pausable, ReentrancyGuard {
         string memory description,
         bool isLifetime
     ) external payable whenNotPaused {
-        require(total_supply < random_max, "Max random tokens reached");
-
         uint256 price = random_price + (isLifetime ? lifetime_fee : 0);
         require(msg.value >= price, "Insufficient ETH for minting");
 
@@ -107,7 +107,7 @@ contract Qyoo is ERC721A, ERC721ABurnable, Ownable, Pausable, ReentrancyGuard {
         string memory description,
         bool isLifetime
     ) external payable whenNotPaused {
-        require(customId <= MAX_SUPPLY, "Invalid custom ID");
+        require(customId <= MAX_SUPPLY, "Invalid custom ID"); // this is wrong
         require(!_exists(customId), "Token with this ID already exists");
 
         uint256 price = custom_price + (isLifetime ? lifetime_fee : 0);
@@ -128,7 +128,7 @@ contract Qyoo is ERC721A, ERC721ABurnable, Ownable, Pausable, ReentrancyGuard {
         string[] memory urls,
         string[] memory icons,
         string[] memory descriptions,
-        uint256[] memory expirations  // Array of expiration timestamps
+        uint256[] memory expirations
     ) external onlyOwner {
         uint256 length = tokenIds.length;
         require(
@@ -177,7 +177,7 @@ contract Qyoo is ERC721A, ERC721ABurnable, Ownable, Pausable, ReentrancyGuard {
         string memory description,
         uint256 expirationTimestamp
     ) internal {
-        require(bytes(description).length <= 60, "Description too long");
+        require(bytes(description).length <= 60, "Description too long"); // FIXME: this should be in the previous minting methods, not fail here
         _safeMint(to, 1);  // Mint 1 ERC721A token
         _tokenInfo[tokenId] = TokenInfo({
             url: url,
@@ -186,14 +186,14 @@ contract Qyoo is ERC721A, ERC721ABurnable, Ownable, Pausable, ReentrancyGuard {
             description: description,
             expirationTimestamp: expirationTimestamp
         });
-        total_supply++;
+        current_total++;
     }
 
-    // Override _burn function to handle TokenInfo cleanup and total_supply
+    // Override _burn function to handle TokenInfo cleanup and current_total
     function _burn(uint256 tokenId, bool approvalCheck) internal override {
         super._burn(tokenId, approvalCheck);
         delete _tokenInfo[tokenId];
-        total_supply--;
+        current_total--;
     }
 
     // Override transfer functions to prevent transferring expired tokens
@@ -218,6 +218,9 @@ contract Qyoo is ERC721A, ERC721ABurnable, Ownable, Pausable, ReentrancyGuard {
 
     // Token owner can renew their token
     function renewToken(uint256 tokenId, bool extendToLifetime) external payable whenNotPaused {
+
+        // FIXME: this should instead let them extend to any length, but pay the appropriate fee (renewal_fee * number of years they want to extend)
+
         require(_exists(tokenId), "Token does not exist");
         require(ownerOf(tokenId) == msg.sender, "Not the token owner");
 
@@ -236,6 +239,8 @@ contract Qyoo is ERC721A, ERC721ABurnable, Ownable, Pausable, ReentrancyGuard {
 
     // Get the expiration duration based on token type
     function _getTokenExpirationDuration(uint256 tokenId) internal view returns (uint256) {
+        // FIXME: this is completely wrong - it should be based on the last renewal number of years
+
         // Assuming tokens retain their original expiration durations upon renewal
         if (tokenId < basic_max) {
             return basicExpiration;
@@ -253,7 +258,7 @@ contract Qyoo is ERC721A, ERC721ABurnable, Ownable, Pausable, ReentrancyGuard {
 
         _burn(tokenId);
         delete _tokenInfo[tokenId];
-        total_supply--;
+        current_total--;
 
         emit TokenReclaimed(tokenId);
     }
@@ -263,7 +268,6 @@ contract Qyoo is ERC721A, ERC721ABurnable, Ownable, Pausable, ReentrancyGuard {
         uint256 tokenId,
         string memory newUrl,
         string memory newName,
-        string memory newIcon,
         string memory newDescription
     ) external onlyValidToken(tokenId) {
         require(ownerOf(tokenId) == msg.sender, "Not the token owner");
@@ -272,7 +276,6 @@ contract Qyoo is ERC721A, ERC721ABurnable, Ownable, Pausable, ReentrancyGuard {
         TokenInfo storage info = _tokenInfo[tokenId];
         info.url = newUrl;
         info.name = newName;
-        info.icon = newIcon;
         info.description = newDescription;
     }
 
@@ -285,11 +288,6 @@ contract Qyoo is ERC721A, ERC721ABurnable, Ownable, Pausable, ReentrancyGuard {
     function updateTokenName(uint256 tokenId, string memory newName) external onlyValidToken(tokenId) {
         require(ownerOf(tokenId) == msg.sender, "Not the token owner");
         _tokenInfo[tokenId].name = newName;
-    }
-
-    function updateTokenIcon(uint256 tokenId, string memory newIcon) external onlyValidToken(tokenId) {
-        require(ownerOf(tokenId) == msg.sender, "Not the token owner");
-        _tokenInfo[tokenId].icon = newIcon;
     }
 
     function updateTokenDescription(uint256 tokenId, string memory newDescription) external onlyValidToken(tokenId) {
@@ -310,6 +308,7 @@ contract Qyoo is ERC721A, ERC721ABurnable, Ownable, Pausable, ReentrancyGuard {
             uint256 expirationTimestamp
         )
     {
+        // FIXME: do not return info if expired
         require(_exists(tokenId), "Token does not exist");
         TokenInfo memory info = _tokenInfo[tokenId];
         return (info.name, info.url, info.icon, info.description, info.expirationTimestamp);
@@ -329,7 +328,7 @@ contract Qyoo is ERC721A, ERC721ABurnable, Ownable, Pausable, ReentrancyGuard {
 
         // Generate random bits for '?'
         uint256 randomBits = uint256(
-            keccak256(abi.encodePacked(block.timestamp, msg.sender, total_supply))
+            keccak256(abi.encodePacked(block.timestamp, msg.sender, current_total))
         );
 
         // Bits 28-25 (variable)
@@ -373,7 +372,7 @@ contract Qyoo is ERC721A, ERC721ABurnable, Ownable, Pausable, ReentrancyGuard {
     // Generate a random token ID (any 36-bit number)
     function _generateRandomTokenId() internal view returns (uint256) {
         uint256 randomId = uint256(
-            keccak256(abi.encodePacked(block.timestamp, msg.sender, total_supply))
+            keccak256(abi.encodePacked(block.timestamp, msg.sender, current_total))
         ) % MAX_SUPPLY;
         while (_exists(randomId)) {
             randomId = (randomId + 1) % MAX_SUPPLY;
@@ -441,7 +440,7 @@ contract Qyoo is ERC721A, ERC721ABurnable, Ownable, Pausable, ReentrancyGuard {
     }
 
     // Override tokenURI to provide metadata URL
-    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+    function tokenURI(uint256 tokenId) public view override(ERC721A, IERC721A) returns (string memory) {
         require(_exists(tokenId), "Token does not exist");
         string memory base = _baseURI();
         return bytes(base).length > 0 ? string(abi.encodePacked(base, Strings.toString(tokenId))) : "";
