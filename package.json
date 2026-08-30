@@ -1,11 +1,28 @@
 {
-  "dependencies": {
-    "dotenv": "^16.4.5"
+  "name": "qyoo-contract-eth",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Permanent 36-bit Qyoo ownership Registry and replaceable commercial Minter",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:local": "hardhat run scripts/deploy.js",
+    "demo": "hardhat run scripts/demo.js",
+    "gas": "hardhat run scripts/measure-gas.js"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "@openzeppelin/contracts": "^5.1.0",
-    "erc721a": "^4.3.0",
-    "hardhat": "^2.22.13"
+    "@nomicfoundation/hardhat-ethers": "4.0.15",
+    "@nomicfoundation/hardhat-ethers-chai-matchers": "3.0.11",
+    "@nomicfoundation/hardhat-mocha": "3.1.0",
+    "@nomicfoundation/hardhat-network-helpers": "3.0.11",
+    "@openzeppelin/contracts": "5.6.1",
+    "chai": "6.2.2",
+    "ethers": "6.17.0",
+    "hardhat": "3.15.0",
+    "mocha": "11.8.0"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

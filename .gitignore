@@ -1,0 +1,7 @@
+artifacts/
+cache/
+coverage/
+node_modules/
+types/
+.codex-work/
+_remove_later/

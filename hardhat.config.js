@@ -1,17 +1,24 @@
-require("@nomicfoundation/hardhat-toolbox");
-require('dotenv').config();
+import { defineConfig } from "hardhat/config";
+import hardhatEthers from "@nomicfoundation/hardhat-ethers";
+import hardhatEthersChaiMatchers from "@nomicfoundation/hardhat-ethers-chai-matchers";
+import hardhatMocha from "@nomicfoundation/hardhat-mocha";
+import hardhatNetworkHelpers from "@nomicfoundation/hardhat-network-helpers";
 
-const INFURA_PROJECT_ID = process.env.INFURA_PROJECT_ID;
-const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
-const PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY;
-
-/** @type import('hardhat/config').HardhatUserConfig */
-module.exports = {
-  solidity: "0.8.20",
-  networks: {
-    sepolia: {
-      url: `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
-      accounts: [PRIVATE_KEY],
+export default defineConfig({
+  plugins: [hardhatEthers, hardhatEthersChaiMatchers, hardhatMocha, hardhatNetworkHelpers],
+  solidity: {
+    version: "0.8.26",
+    settings: {
+      evmVersion: "cancun",
+      optimizer: {
+        enabled: true,
+        runs: 200,
+      },
     },
   },
-};
+  test: {
+    mocha: {
+      timeout: 40_000,
+    },
+  },
+});
