@@ -1,29 +1,33 @@
-const hre = require("hardhat");
+import { network } from "hardhat";
 
-async function main() {
-  console.log("Starting deployment...");
+const { ethers } = await network.create();
+const [registryAdmin, minterOwner, issuer, treasury] = await ethers.getSigners();
 
-  // Get the contract factory
-  const Qyoo = await hre.ethers.getContractFactory("Qyoo");
-  console.log("Contract factory obtained.");
+// Illustrative local values only; launch economics are constructor configuration.
+const randomPrice = ethers.parseEther("0.01");
+const customPrice = ethers.parseEther("0.1");
 
-  // Deploy the contract
-  const qyoo = await Qyoo.deploy();
-  console.log("Deployment transaction sent. Waiting for deployment...");
+const registry = await ethers.deployContract("QyooRegistry", [registryAdmin.address]);
+await registry.waitForDeployment();
 
-  // Wait for the deployment to be mined
-  await qyoo.waitForDeployment();
-  console.log("Contract deployed.");
+const minter = await ethers.deployContract("QyooMinter", [
+  await registry.getAddress(),
+  minterOwner.address,
+  issuer.address,
+  treasury.address,
+  randomPrice,
+  customPrice,
+]);
+await minter.waitForDeployment();
+await (
+  await registry.connect(registryAdmin).setMintAuthority(await minter.getAddress(), true)
+).wait();
 
-  // Get the contract address
-  const address = await qyoo.getAddress();
-  console.log("Qyoo deployed to:", address);
-}
-
-main()
-  .then(() => process.exit(0))
-  .catch((error) => {
-    console.error("Error deploying contract:", error);
-    process.exit(1);
-  });
-
+console.log("Local-only Qyoo deployment");
+console.log("Registry:", await registry.getAddress());
+console.log("Minter:  ", await minter.getAddress());
+console.log("Registry admin:", registryAdmin.address);
+console.log("Minter owner:  ", minterOwner.address);
+console.log("Issuer:  ", issuer.address);
+console.log("Treasury:", treasury.address);
+console.log("Minter authorized:", await registry.isMintAuthority(await minter.getAddress()));

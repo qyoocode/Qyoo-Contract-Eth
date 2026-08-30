@@ -1,405 +1,198 @@
-# Qyoo NFT Smart Contract
+# Qyoo Ethereum Registry vNext
 
-## Introduction
+Qyoo vNext gives every scanned 36-bit visual ID a permanent, independently readable ERC-721 ownership record.
 
-The **Qyoo NFT Smart Contract** is a Solidity-based smart contract that implements an ERC721A token with extended functionalities tailored for the Qyoo platform. The contract allows users to mint unique NFTs that correspond to scannable codes, enabling dynamic content sharing and interaction through the Qyoo app.
+The protocol rule is simple:
 
-This document provides a detailed technical overview of the contract, its functionalities, and instructions on how to deploy and interact with it. It is intended for developers who wish to understand the contract's inner workings or contribute to its development.
+> Qyoo controls issuance. After minting, the holder controls the Qyoo.
 
-## Contract Overview
+If Qyoo operations disappear, existing holders can still prove ownership, use standard ERC-721 transfers, appoint/revoke a resolver controller, and change resolver pointers using ordinary Ethereum transactions. Only new issuance may stop.
 
-The Qyoo contract is built on the ERC721A standard for efficient batch minting and includes several custom features to support the Qyoo ecosystem.
+This repository contains local-development contracts only. Nothing here has been deployed to Ethereum, a public testnet, an L2, Cardano, or any other public chain.
 
-### Key Features
+## Architecture
 
-- **Token Minting**: Supports minting of basic, random, and custom tokens.
-- **Token Expiration**: Tokens have expiration dates, with options for lifetime ownership.
-- **Token Management**: Owners can update token metadata and renew expired tokens.
-- **Burn Functionality**: Tokens can be burned to facilitate future migrations.
-- **Administrative Control**: Adjustable parameters for prices, expiration durations, and supply limits.
-- **Security**: Incorporates OpenZeppelin's security best practices, including pausable functions and reentrancy guards.
-- **Event Emission**: Emits events for key actions to facilitate off-chain monitoring.
-
-### Token Types
-
-1. **Basic Tokens**:
-   - **Price**: `basic_price` (default 0.001 ETH)
-   - **Expiration**: `basicExpiration` (default 1 year)
-   - **Supply Limit**: `basic_max`
-
-2. **Random Tokens**:
-   - **Price**: `random_price` (default 0.01 ETH)
-   - **Expiration**: `randomExpiration` (default 3 years)
-   - **Supply Limit**: `random_max`
-
-3. **Custom Tokens**:
-   - **Price**: `custom_price` (default 0.1 ETH)
-   - **Expiration**: `customExpiration` (default 5 years)
-   - **Supply Limit**: Up to `MAX_SUPPLY`
-
-4. **Lifetime Ownership**:
-   - **Additional Fee**: `lifetime_fee` (default 1 ETH)
-   - **Effect**: Token does not expire.
-
-## Contract Details
-
-### Dependencies
-
-- **Solidity Version**: `^0.8.0`
-- **OpenZeppelin Contracts**:
-  - `Ownable.sol`: Access control for owner-only functions.
-  - `Pausable.sol`: Allows contract pausing.
-  - `ReentrancyGuard.sol`: Protects against reentrancy attacks.
-- **ERC721A Contracts**:
-  - `ERC721A.sol`: Efficient implementation of ERC721.
-  - `ERC721ABurnable.sol`: Extension to allow token burning.
-
-### State Variables
-
-- **Constants**:
-  - `MAX_SUPPLY`: Maximum number of tokens `(2**36) - 1`.
-- **Supply Limits**:
-  - `basic_max`: Max supply for basic tokens.
-  - `random_max`: Max supply for random tokens.
-- **Pricing**:
-  - `basic_price`, `random_price`, `custom_price`: Prices for minting tokens.
-  - `lifetime_fee`: Additional fee for lifetime ownership.
-  - `renewalFee`: Fee for renewing expired tokens.
-- **Expiration Durations**:
-  - `basicExpiration`, `randomExpiration`, `customExpiration`: Durations for token expiration.
-- **Addresses**:
-  - `withdrawalAddress`: Address where contract funds can be withdrawn.
-- **Token Info Mapping**:
-  - `_tokenInfo`: Stores metadata and expiration for each token.
-- **Total Supply**:
-  - `total_supply`: Tracks the total number of tokens minted.
-
-### Structs
-
-- **TokenInfo**:
-  - `url`: Associated URL for the token.
-  - `name`: Name of the token.
-  - `icon`: Icon URL or identifier.
-  - `description`: Short description (max 60 characters).
-  - `expirationTimestamp`: Timestamp when the token expires (0 if lifetime).
-
-### Events
-
-- `TokenMinted(address owner, uint256 tokenId, uint256 expirationTimestamp)`
-- `TokenRenewed(address owner, uint256 tokenId, uint256 newExpirationTimestamp)`
-- `TokenReclaimed(uint256 tokenId)`
-- `TokenBurned(address owner, uint256 tokenId)`
-
-### Modifiers
-
-- `onlyValidToken(uint256 tokenId)`: Ensures the token exists and is not expired.
-- `whenNotPaused`: Ensures the contract is not paused.
-
-## Functions
-
-### Minting Functions
-
-#### `mintBasicToken(...)`
-
-- **Description**: Mints a basic token with optional lifetime ownership.
-- **Parameters**:
-  - `name`, `url`, `icon`, `description`: Metadata for the token.
-  - `isLifetime`: If `true`, token will not expire.
-- **Requirements**:
-  - Total supply must be less than `basic_max`.
-  - Sender must pay at least `basic_price` (+ `lifetime_fee` if applicable).
-- **Emits**: `TokenMinted`
-
-#### `mintRandomToken(...)`
-
-- **Description**: Mints a random token with optional lifetime ownership.
-- **Parameters**: Same as `mintBasicToken`.
-- **Requirements**:
-  - Total supply must be less than `random_max`.
-  - Sender must pay at least `random_price` (+ `lifetime_fee` if applicable).
-- **Emits**: `TokenMinted`
-
-#### `mintCustomToken(...)`
-
-- **Description**: Mints a custom token with a specified ID.
-- **Parameters**: Same as `mintBasicToken`, plus `customId`.
-- **Requirements**:
-  - `customId` must be less than or equal to `MAX_SUPPLY`.
-  - Token ID must not already exist.
-  - Sender must pay at least `custom_price` (+ `lifetime_fee` if applicable).
-- **Emits**: `TokenMinted`
-
-#### `ownerMintTokens(...)`
-
-- **Description**: Owner-only function to batch mint tokens without payment.
-- **Parameters**:
-  - `recipient`: Address to receive the tokens.
-  - Arrays of `tokenIds`, `names`, `urls`, `icons`, `descriptions`, `expirations`.
-- **Requirements**:
-  - Only callable by the contract owner.
-
-### Token Management Functions
-
-#### `updateTokenInfo(...)`
-
-- **Description**: Updates all metadata fields of a token.
-- **Parameters**: `tokenId`, `newUrl`, `newName`, `newIcon`, `newDescription`.
-- **Requirements**:
-  - Caller must be the owner of the token.
-  - Token must be valid (not expired).
-  - `newDescription` must be 60 characters or fewer.
-
-#### Individual Update Functions
-
-- **`updateTokenUrl(tokenId, newUrl)`**
-- **`updateTokenName(tokenId, newName)`**
-- **`updateTokenIcon(tokenId, newIcon)`**
-- **`updateTokenDescription(tokenId, newDescription)`**
-
-#### `renewToken(tokenId, extendToLifetime)`
-
-- **Description**: Renews an expired token or extends it to lifetime ownership.
-- **Parameters**:
-  - `tokenId`: ID of the token to renew.
-  - `extendToLifetime`: If `true`, sets expiration to 0.
-- **Requirements**:
-  - Caller must be the owner of the token.
-  - Must pay at least `renewalFee` or `lifetime_fee`.
-- **Emits**: `TokenRenewed`
-
-#### `reclaimExpiredToken(tokenId)`
-
-- **Description**: Allows the owner to reclaim and burn an expired token.
-- **Requirements**:
-  - Only callable by the contract owner.
-  - Token must be expired.
-- **Emits**: `TokenReclaimed`
-
-#### `burn(tokenId)`
-
-- **Description**: Allows token owners to burn their tokens.
-- **Requirements**:
-  - Caller must be the owner of the token.
-- **Emits**: `Transfer` event to zero address.
-
-### Administrative Functions
-
-#### Price and Fee Adjustments
-
-- **`setBasicPrice(newBasicPrice)`**
-- **`setRandomPrice(newRandomPrice)`**
-- **`setCustomPrice(newCustomPrice)`**
-- **`setLifetimeFee(newFee)`**
-- **`setRenewalFee(newFee)`**
-
-#### Expiration Duration Adjustments
-
-- **`setBasicExpiration(duration)`**
-- **`setRandomExpiration(duration)`**
-- **`setCustomExpiration(duration)`**
-
-#### Supply Limit Adjustments
-
-- **`setBasicMax(newBasicMax)`**
-- **`setRandomMax(newRandomMax)`**
-
-#### Withdrawal Functions
-
-- **`setWithdrawalAddress(newAddress)`**
-  - Sets a new address for withdrawals.
-- **`withdraw()`**
-  - Withdraws contract balance to `withdrawalAddress`.
-- **Requirements**:
-  - Only callable by the contract owner.
-
-#### Pausable Functions
-
-- **`pause()`**
-- **`unpause()`**
-- **Requirements**:
-  - Only callable by the contract owner.
-
-#### Metadata URI Management
-
-- **`setBaseURI(baseURI)`**
-  - Sets the base URI for token metadata.
-
-### Utility Functions
-
-#### Token Information Retrieval
-
-- **`getTokenInfo(tokenId)`**
-  - Returns `name`, `url`, `icon`, `description`, and `expirationTimestamp` of a token.
-
-#### Token ID Generation
-
-- **`_generateBasicTokenId()`**
-  - Generates a token ID matching a specific pattern.
-- **`_generateRandomTokenId()`**
-  - Generates a random 36-bit token ID.
-
-## Usage Instructions
-
-### Prerequisites
-
-- **Node.js** and **npm** installed.
-- **Hardhat** or **Truffle** for contract compilation and deployment.
-- **Solidity Compiler** version `^0.8.0`.
-- **Ethereum Client** or access to a testnet/mainnet via a provider like Infura.
-
-### Compilation
-
-1. **Install Dependencies**:
-
-   ```bash
-   npm install @openzeppelin/contracts
-   npm install erc721a
-   ```
-
-2. **Compile the Contract**:
-
-   Using Hardhat:
-
-   ```bash
-   npx hardhat compile
-   ```
-
-   Using Truffle:
-
-   ```bash
-   truffle compile
-   ```
-
-### Deployment
-
-1. **Configure Deployment Script**:
-
-   Set up your deployment script with the appropriate network configuration.
-
-2. **Deploy the Contract**:
-
-   Using Hardhat:
-
-   ```bash
-   npx hardhat run scripts/deploy.js --network <network-name>
-   ```
-
-   Using Truffle:
-
-   ```bash
-   truffle migrate --network <network-name>
-   ```
-
-3. **Verify Deployment**:
-
-   - Ensure the contract address is recorded.
-   - Verify the contract on Etherscan if deploying to a public network.
-
-### Interacting with the Contract
-
-You can interact with the contract using scripts, a frontend application, or directly via the command line using tools like **Hardhat Console** or **Truffle Console**.
-
-#### Example: Minting a Basic Token
-
-```javascript
-// Assuming you have a contract instance `qyooContract`
-
-const name = "My Qyoo Token";
-const url = "https://example.com";
-const icon = "https://example.com/icon.png";
-const description = "A sample Qyoo token";
-const isLifetime = false;
-
-// Calculate the required payment
-const price = await qyooContract.basic_price();
-
-const tx = await qyooContract.mintBasicToken(
-  name,
-  url,
-  icon,
-  description,
-  isLifetime,
-  { value: price }
-);
-
-await tx.wait();
-
-console.log("Token minted successfully!");
+```text
+QyooMinter (replaceable commercial issuance)
+    │ authorized for future unused IDs
+    ▼
+QyooRegistry (permanent ownership and resolution)
+    │ read-only Ethereum calls
+    ▼
+independent scanners / resolvers / indexers
 ```
 
-#### Example: Updating Token Information
+### QyooRegistry
 
-```javascript
-const tokenId = 1; // Replace with your token ID
-const newUrl = "https://newexample.com";
+`QyooRegistry` is a deliberately small, non-upgradeable ERC-721 contract.
 
-const tx = await qyooContract.updateTokenUrl(tokenId, newUrl);
-await tx.wait();
+- `tokenId == scanned raw 36-bit Qyoo ID`
+- valid IDs are `0...68,719,476,735` (`2**36 - 1`)
+- ownership never expires
+- no burn function is exposed
+- an ID that has been minted can never be minted again
+- every mint writes an explicit token-specific resolver
+- the holder can appoint or revoke one controller
+- holder or controller can update the resolver
+- ownership transfer clears the controller automatically
+- standard ERC-721 approvals/transfers remain interoperable
+- the Registry admin can manage future mint authorities and pause only new minting
 
-console.log("Token URL updated successfully!");
+There is no proxy or upgrade key. The Registry admin cannot transfer, burn, redirect, or appoint a controller for an existing holder's token. Minting can be paused without pausing transfer or resolution control.
+
+### QyooMinter
+
+`QyooMinter` is a replaceable business layer. It supports two configurable pricing tiers:
+
+- **Random** — the Qyoo issuance service selects an unused valid ID.
+- **Custom** — the buyer requests an exact unused valid ID.
+
+Both use the same safe issuance mechanism: the service selects/approves the ID and signs an EIP-712 voucher; the named buyer submits the voucher and exact payment; the Minter verifies it and asks the Registry to mint that exact ID.
+
+No timestamp, block hash, or predictable on-chain arithmetic is presented as randomness. “Random” describes the lower-cost product allocation made by the issuer, not a blockchain entropy claim.
+
+Prices are constructor configuration and can change for future mints. A price update increments `pricingVersion`, invalidating older quotes. Historical `0.01 ETH` random and `0.1 ETH` custom values appear only as illustrative local demo inputs; they are not launch promises.
+
+## Mint voucher v1
+
+The EIP-712 domain is:
+
+- name: `QyooMinter`
+- version: `1`
+- current chain ID
+- deployed Minter address
+
+The signed struct is:
+
+```solidity
+MintVoucher(
+    uint256 tokenId,
+    address recipient,
+    uint8 tier,
+    uint256 price,
+    uint256 nonce,
+    uint256 deadline,
+    uint256 pricingVersion,
+    bytes32 resolverHash
+)
 ```
 
-#### Example: Renewing a Token
+The voucher is non-transferable: `recipient` must submit it. Its nonce is one-use per recipient. It cannot be replayed on another chain or Minter, after its deadline, for another resolver, with another tier/price, after a pricing-version change, or for an already-issued ID. Payment must be exact; both underpayment and overpayment revert.
 
-```javascript
-const tokenId = 1; // Replace with your token ID
-const extendToLifetime = true; // Set to false for standard renewal
+## Resolver protocol
 
-// Calculate the required fee
-const fee = extendToLifetime
-  ? await qyooContract.lifetime_fee()
-  : await qyooContract.renewalFee();
+The Registry stores one non-empty resolver string per token, limited to 256 UTF-8 bytes. It deliberately treats the value as an opaque URI/pointer so clients can evolve support for, for example:
 
-const tx = await qyooContract.renewToken(tokenId, extendToLifetime, {
-  value: fee,
-});
+- `https://...`
+- `ipfs://...`
+- a future contract/chain-aware URI scheme
 
-await tx.wait();
+The Registry does not assume `qyoo.com` is permanent and has no shared mutable default that can redirect existing Qyoos. A convenience default belongs in issuance software and becomes explicit token state at mint.
 
-console.log("Token renewed successfully!");
+Full experience manifests, titles, icons, descriptions, analytics, personalization, and hosted-service subscriptions do not belong in the permanent Registry. Immutable content can use a content-addressed resolver. An optional manifest hash was omitted until its fetch and integrity semantics are specified.
+
+Read current state without a transaction using:
+
+- `ownerOf(tokenId)`
+- `controllerOf(tokenId)`
+- `resolverOf(tokenId)`
+- `resolutionOf(tokenId)`
+- `wasIssued(tokenId)`
+
+ERC-721 `Transfer` plus `QyooMinted`, `ControllerChanged`, `ResolverChanged`, `MintAuthorityChanged`, and `MintingPauseChanged` events allow independent state indexing.
+
+## Ownership versus official services
+
+Qyoo ownership is permanent and has no annual fee. Future first-party resolver hosting may be sold as a separate service—potentially with included, annual, or lifetime hosting plans—but service expiry must never expire ownership. A holder can always select another resolver.
+
+## Development
+
+Requirements:
+
+- Node.js 22 or newer
+- npm
+
+Install, compile, and test:
+
+```sh
+npm ci
+npm run compile
+npm test
 ```
 
-## Migration Plan
+The pinned development stack uses Hardhat 3.15.0, Solidity 0.8.26 targeting Cancun with optimizer runs set to 200, OpenZeppelin Contracts 5.6.1, ethers 6.17.0, and Mocha 11.8.0.
 
-To prepare for potential future upgrades or migrations (e.g., incorporating AR experiences or enhanced interactivity), the contract includes burn functionality. Token holders can burn their tokens, enabling them to mint equivalent tokens on a new contract with the same token IDs.
+There are intentionally no public network entries, RPC secrets, or deployer keys in the Hardhat configuration.
 
-### Steps for Migration
+## Local deployment and protocol demo
 
-1. **Token Holders Burn Tokens**:
+Deploy Registry and Minter on an ephemeral Hardhat chain:
 
-   - Users call the `burn(tokenId)` function to destroy their tokens.
-   - The `burn` function emits a `Transfer` event to the zero address.
+```sh
+npm run deploy:local
+```
 
-2. **Deploy New Contract**:
+Run the full local scenario:
 
-   - Deploy a new contract (e.g., `QyooV2`) with the desired enhancements.
+```sh
+npm run demo
+```
 
-3. **Mint New Tokens**:
+The demo:
 
-   - Users interact with the new contract to mint equivalent tokens.
-   - The new contract verifies that the token was burned in the old contract.
+1. deploys Registry and Minter;
+2. authorizes the Minter;
+3. issues one Random and one Custom Qyoo with signed vouchers;
+4. appoints a controller;
+5. changes the resolver through that controller;
+6. revokes and reappoints the controller;
+7. transfers the Qyoo, atomically clearing the controller;
+8. proves the old controller is rejected;
+9. lets the new owner change the resolver.
 
-4. **Data Migration**:
+Measure the same core operations locally:
 
-   - If necessary, migrate metadata or state associated with the tokens.
+```sh
+npm run gas
+```
 
-### Considerations
+Current approximate measurements are recorded in [docs/GAS_MEASUREMENTS.md](docs/GAS_MEASUREMENTS.md).
 
-- **User Communication**: Provide clear instructions and support to users during the migration process.
-- **Security**: Ensure the new contract is audited and secure.
-- **Legal Compliance**: Update terms of service to include migration provisions.
+## Tests and invariants
 
-## Security Considerations
+The suite covers:
 
-- **Access Control**: Only the owner can call administrative functions.
-- **Reentrancy Guard**: The `withdraw` function is protected against reentrancy attacks.
-- **Pausable Contract**: The owner can pause the contract in case of emergencies.
-- **Input Validation**: Functions validate inputs and enforce restrictions.
-- **Token Expiration**: Expired tokens cannot be transferred or updated.
-- **Burn Functionality**: Allows for secure token burning in preparation for migration.
+- IDs `0`, `1`, representative values, `2**36 - 1`, and rejection of `2**36`;
+- exact raw-ID/ERC-721 identity;
+- permanent duplicate prevention over deterministic fuzzed IDs;
+- standard ERC-721 owner/approval transfer authorization;
+- resolver authority restricted to owner/current controller;
+- owner revocation and controller clearing on transfer;
+- Registry admin, mint authority, Minter owner, controller, stale controller, approved operator, and attacker abuse attempts;
+- paused minting with uninterrupted existing-holder operations;
+- Random and Custom voucher redemption;
+- recipient, resolver, tier, price, pricing-version, deadline, nonce, chain, contract, and signer binding;
+- exact payment, price changes, replay, invalid/already-used IDs, and failed withdrawals;
+- safe-mint receiver callback event ordering for independent indexing.
+
+See [docs/SECURITY_MODEL.md](docs/SECURITY_MODEL.md) for threats and residual work.
+
+## Cross-chain policy
+
+Ethereum is the canonical v1 chain. There are no separate Cardano IDs, no namespace partition, and no chain bits in the carrier. Any future bridge must represent Ethereum-rooted ownership rather than create a second unrelated canonical owner for Qyoo `N`.
+
+See [docs/CROSS_CHAIN_NOTES.md](docs/CROSS_CHAIN_NOTES.md).
+
+## Current limitations
+
+- No public deployment or independent audit has occurred.
+- Admin, issuer, and treasury production custody/multisig policy is not selected.
+- Resolver client URI rules and malicious-content UX remain to be specified.
+- No official hosting subscription, marketplace, wallet UI, app RPC integration, bridge, tokenomics, or backend is implemented.
+- Informational EIP-2981 royalties are not included; ordinary transfer does not depend on a first-party marketplace.
+
+The legacy experiment and redesign decisions are documented in [docs/LEGACY_CONTRACT_AUDIT.md](docs/LEGACY_CONTRACT_AUDIT.md).
 
 ## License
 
-This project is licensed under the **BSD-3 Clause License**.
-
-**Note**: This README provides an overview of the Qyoo NFT Smart Contract. For further details or contributions, please contact [github@qyoo.com](mailto:github@qyoo.com).
+BSD 3-Clause. See [LICENSE](LICENSE).
