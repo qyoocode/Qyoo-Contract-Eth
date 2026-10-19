@@ -1,6 +1,6 @@
 # Development dependency advisory triage
 
-Inspected2026-10-18 from the isolated publication-audit branch. This is a
+Inspected 2026-10-18 from the isolated publication-audit branch. This is a
 maintenance candidate, not a release or a contract security certification.
 
 ## Result and boundary
@@ -16,16 +16,18 @@ production JavaScript dependency tree or HTTP service. These packages run on a
 developer/CI host; they do not run inside the deployed EVM contracts. A compromised
 build/test host can still threaten its files or credentials, so development status
 is not grounds to ignore the findings. OpenZeppelin is a Solidity compilation
-input and remains unchanged at5.6.1; `--omit=dev` alone does not certify a contract.
+input and remains unchanged at 5.6.1; `--omit=dev` alone does not certify a contract.
 
 FACT: only package pins/lockfile and audit documentation change in this candidate.
 Solidity, tests, Hardhat 3.15.0, ethers 6.17.0, OpenZeppelin 5.6.1, Solidity 0.8.26,
 optimizer settings, network configuration and deployment scripts remain unchanged.
-No signing, transaction, deployment, main-branch integration or push occurred.
+No public-chain signing, transaction, deployment, main-branch integration or push
+occurred. Full tests deploy only ephemeral local fixture contracts.
 
-**Runtime compatibility remains UNVERIFIED.** Storage below the mandatory 20 GiB
-floor prevented installing the dependency tree and running compile/tests.
-Zero audit findings are not a substitute for those checks.
+**Local runtime validation passed.** The initial storage hold was resolved by a
+separately approved offload. A fresh Node 22.23.3 install, compilation and complete
+28-test suite passed; the installed tree reports zero vulnerabilities. Hosted CI
+and an independent contract security review remain separate checks.
 
 ## Package severity and exploitability
 
@@ -71,9 +73,9 @@ or forced transitive overrides would evade the supported peer relationship.
 FACT: the official plugin 4.0.0
 [changelog change](https://github.com/NomicFoundation/hardhat/commit/e50cc7336b104311519f6fae1f52f3a359016655)
 changes the Mocha peer to `^12.0.0` while keeping Hardhat `^3.12.0`, which includes the
-pinned3.15.0. Its updated utility/error dependencies add nested utility versions;
+pinned 3.15.0. Its updated utility/error dependencies add nested utility versions;
 they are not Solidity library changes. The candidate uses plugin 4.0.0 rather than
-4.0.1 to avoid deliberately introducing the latter's direct utility5 upgrade,
+4.0.1 to avoid deliberately introducing the latter's direct utility 5 upgrade,
 although a nested utility 5 is still resolved through the supported error package.
 No override, audit suppression, compiler upgrade or Hardhat major change is used.
 
@@ -92,11 +94,12 @@ floor changes, dependency majors, and reporter/hook behavior fixes. Mocha 12.0.3
 requires Node `^20.19.0 || >=22.12.0`, compatible with this project's>=22.13.0 floor.
 This project uses ESM tests, ordinary `describe`/`it`, programmatic Hardhat plugin
 configuration and a numeric timeout; no Mocha CLI customization was found. Those
-observations justify preparing the supported pair, not claiming runtime success.
+observations justified preparing the supported pair; the subsequent full local
+suite now supplies runtime evidence.
 
-## Verification and required continuation
+## Verification
 
-Executed lightweight checks:
+Initial lightweight checks:
 
 1. Original `npm audit --package-lock-only --ignore-scripts --cache .codex-work/npm-cache --json`:
    exit1, six affected entries.
@@ -110,41 +113,44 @@ Executed lightweight checks:
    This validates the resolved graph, not installed module execution. No hosted
    workflow ran.
 
-After free space is compliant, use existing Node 22.23.3 at
-`~/.nvm/versions/node/v22.23.3/bin` (executed version check succeeded), then:
+After explicit capacity clearance, the following commands ran under existing
+Node 22.23.3/npm 10.9.9, with
+`env PATH=/Users/jeffrey/.nvm/versions/node/v22.23.3/bin:/usr/bin:/bin`:
 
-```sh
-export PATH="$HOME/.nvm/versions/node/v22.23.3/bin:$PATH"
-npm ci --ignore-scripts --cache .codex-work/npm-cache
-npm run compile
-npm test
-npm audit --audit-level=high --cache .codex-work/npm-cache
-```
+| Command | Result |
+|---|---|
+| `npm ci --ignore-scripts --cache .codex-work/npm-cache --no-fund` | Exit 0; 131 packages installed; zero vulnerabilities. |
+| `npm run compile` | Exit 0; 4 Solidity files; solc0.8.26/cancun. |
+| `npm test` | Exit 0; 28 passing (13 Minter, 3 protocol properties, 12 Registry); zero failing. |
+| `npm audit --audit-level=high --cache .codex-work/npm-cache` | Exit 0; zero vulnerabilities including dev dependencies. |
+| `npm ls --all --json` | Exit 0; installed dependency/peer graph valid. |
+| `git diff --check` | Exit 0. |
 
-Run the entire existing Registry/Minter/property suite; inspect test counts and
-failure names. It covers token bounds, tombstones, callbacks/reentrancy, authority,
-transfers, voucher binding/replay, payment, pause and withdrawals. Compare generated
-ABI/bytecode against the original pins/configuration where available without using
-old artifacts as fresh results. Any failure blocks adopting the matched pair.
-Do not run remote deployment or signing helpers as validation. Local demo/gas may
-be a later ephemeral-chain smoke check after compile/full suite pass.
+The full suite exercises token bounds, tombstones, callbacks/reentrancy, authority,
+transfers, voucher binding/replay, payment, pause and withdrawals. No project test,
+Solidity source, compiler setting or operational script changed. No remote
+signing/deployment helper was run. Local demo/gas and hosted CI were not run.
+Generated artifact hashes and exact log hashes are recorded in the local
+[validation manifest](../artifacts/publication-audit/validation.json); no bytecode
+equivalence comparison with an old build is claimed.
 
 ## Storage and retained evidence
 
-Beginning free space20,861,936 KiB (~19.90 GiB), below 20 GiB. Initial scratch2,460 KiB;
-after lock-only metadata resolution15,328 KiB (~12.6 MiB growth). No dependency install,
+Beginning free space 20,861,936 KiB (~19.90 GiB), below 20 GiB. Initial scratch 2,460 KiB;
+after lock-only metadata resolution 15,328 KiB (~12.6 MiB growth). No dependency install,
 compiler download, build, test run, deletion or quarantine occurred in this phase.
 Untracked ignored scratch retains audit JSON snapshots and registry size metadata
 for reproducibility, not as deliverables or a replacement for checks.
 
 Registry `dist.unpackedSize` metadata for 131 platform-compatible candidate entries
-sums134,470,838 bytes (~128 MiB; includes all analyzer binaries conservatively).
-Last free-space read21,132,776KiB (~20.15GiB), about0.25GiB above the
-beginning whole-volume read; this change includes external activity and is not
-attributable to this task. Scratch15,376KiB, growth12,916KiB (~12.6MiB).
-No cleanup performed. Capacity clearance still pending because the margin is thin.
+sums 134,470,838 bytes (~128 MiB; includes all analyzer binaries conservatively).
+The lockfile phase ended 21,132,776KiB free (~20.15 GiB); no cleanup was performed
+by this task. That thin margin was insufficient for proceeding safely.
 
-Budget 0.5 GiB additional peak for one dependency tree, cache, compiler and test
-outputs; require a fresh capacity check and headroom above 20 GiB before starting.
-Reuse this worktree's `node_modules`, `.codex-work/npm-cache`, Hardhat artifact/cache
-locations and existing compiler cache. Do not create duplicate dependency trees.
+After the separately approved offload, the runtime phase began 22,563,788KiB free
+(21.52GiB) and ended 22,338,520KiB (21.30 GiB). Whole-volume growth was about 220MiB;
+external activity can contribute. One retained dependency tree uses 164,840KiB,
+scratch/npm cache 49,184KiB, generated artifacts 3,104KiB and build cache 8KiB.
+Scratch grew 33,808KiB during runtime validation. The one predictable dependency
+tree, cache, generated artifacts and small QA logs are retained for review/reuse;
+no duplicate tree, compiler cache, deletion or quarantine was created here.
