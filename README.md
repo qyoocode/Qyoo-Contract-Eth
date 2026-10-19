@@ -1,6 +1,6 @@
-# Qyoo Ethereum Registry vNext
+# Qyoo Ethereum Registry and Minter
 
-Qyoo vNext gives every scanned 36-bit visual ID a permanent, independently readable ERC-721 ownership record.
+This experimental protocol can issue a permanent ERC-721 ownership record for a 36-bit Qyoo visual ID. Scanning alone does not mint or establish ownership.
 
 The protocol rule is simple:
 
@@ -8,7 +8,11 @@ The protocol rule is simple:
 
 If Qyoo operations disappear, existing holders can still prove ownership, use standard ERC-721 transfers, appoint/revoke a resolver controller, and change resolver pointers using ordinary Ethereum transactions. Only new issuance may stop.
 
-This repository contains local-development contracts only. Nothing here has been deployed to Ethereum, a public testnet, an L2, Cardano, or any other public chain.
+The contracts at public commit `bc3c4c3e2dc12b5f4a82411f6011662417c677d9`
+were deployed to Ethereum **Sepolia** (chain `11155111`). The
+[deployment record](docs/SEPOLIA.md) distinguishes verified testnet contracts
+from operational services. This repository does not establish a Mainnet
+release, a public minting service or consumer wallet functionality.
 
 ## Architecture
 
@@ -107,9 +111,14 @@ Qyoo ownership is permanent and has no annual fee. Future first-party resolver h
 
 ## Development
 
+The publication audit found outstanding npm development-tool advisories; see
+[AUDIT.md](AUDIT.md). Successful local compilation/test results must be obtained
+before a release. CI is configured, but an unexecuted workflow is not a pass.
+
+
 Requirements:
 
-- Node.js 22 or newer
+- Node.js 22.13.0 or newer on a supported even-major release ([Hardhat support](https://hardhat.org/docs/reference/nodejs-support))
 - npm
 
 Install, compile, and test:
@@ -185,14 +194,14 @@ See [docs/CROSS_CHAIN_NOTES.md](docs/CROSS_CHAIN_NOTES.md).
 
 ## Current limitations
 
-- No public deployment or independent audit has occurred.
+- Sepolia testnet deployment is verified; no independent security audit or Mainnet deployment is established here.
 - Admin, issuer, and treasury production custody/multisig policy is not selected.
 - Resolver client URI rules and malicious-content UX remain to be specified.
-- No official hosting subscription, marketplace, wallet UI, app RPC integration, bridge, tokenomics, or backend is implemented.
+- No official hosting subscription, marketplace, wallet UI, app RPC integration, bridge, tokenomics, or backend is implemented **in this repository**. Separate Qyoo products/services must be evaluated on their own evidence.
 - Informational EIP-2981 royalties are not included; ordinary transfer does not depend on a first-party marketplace.
 
 The legacy experiment and redesign decisions are documented in [docs/LEGACY_CONTRACT_AUDIT.md](docs/LEGACY_CONTRACT_AUDIT.md).
 
 ## License
 
-BSD 3-Clause. See [LICENSE](LICENSE).
+Original repository license: [BSD-3-Clause](LICENSE). The Solidity source files also contain MIT SPDX identifiers; this inconsistency requires owner clarification before redistribution claims. OpenZeppelin Contracts is a separate MIT-licensed dependency. No license header was silently replaced; see [AUDIT.md](AUDIT.md).
