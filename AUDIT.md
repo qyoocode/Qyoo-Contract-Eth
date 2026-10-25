@@ -3,9 +3,18 @@
 Inspected public main `bc3c4c3e2dc12b5f4a82411f6011662417c677d9`.
 Classification: experimental Registry/Minter with a verified Sepolia deployment.
 Verdict: dependency maintenance and deployment-documentation corrections are
-prepared and locally validated. Public release remains blocked by the root/SPDX
-license ambiguity. No Solidity source or contract ABI declarations changed.
+prepared and locally validated. The 2026-10-24 owner decision confirms BSD-3-Clause
+for Qyoo-owned code while preserving existing MIT file-level and dependency
+grants; [scope and notices](THIRD_PARTY_NOTICES.md) now document that distinction.
+No Solidity source or contract ABI declarations changed.
 Hosted CI and independent security review are not claimed.
+
+2026-10-24 cleanup checks: `git diff --check`, notice/link checks and
+`npm ls --depth=0` passed. All four Solidity files, root `LICENSE`, dependency
+pins and Hardhat configuration are byte-identical to `e3347c4`. No contract
+behavior changed, so the completed compile/28-test receipts below were retained
+without repetition. Qyoo / Pushplay LLC branding is current; historical
+copyright notices are unchanged.
 
 ## Verified source behavior and coverage
 
@@ -33,9 +42,10 @@ all 28 tests (13 Minter, 3 protocol properties, 12 Registry).
   including development dependencies. After explicit storage clearance, a fresh
   install, compile and full 28-test suite passed under Node 22.23.3. See [dependency triage](docs/DEPENDENCY_TRIAGE.md) for package,
   advisory, exposure and compatibility details. No Solidity/ABI change was made.
-- HIGH — root `LICENSE` is BSD-3-Clause while Registry, Minter and test-contract
-  SPDX headers say MIT. Preserved both pending owner confirmation of intended
-  licensing; neither a new license grant nor a rewritten copyright was invented.
+- CLOSED (2026-10-24 owner decision) — root `LICENSE` remains BSD-3-Clause; existing
+  MIT SPDX identifiers remain in all four Solidity files as file-level grants.
+  OpenZeppelin’s complete tagged MIT notice is retained separately. Historical
+  copyright ownership and grants are unchanged.
 - MEDIUM — README falsely said no public deployment. Corrected using public
   Sourcify exact-match records, byte-identical local source and fresh read-only
   Sepolia `eth_getCode` comparison. See [SEPOLIA.md](docs/SEPOLIA.md). No Mainnet,
@@ -90,9 +100,10 @@ unchanged. The maintenance candidate updates Mocha, its plugin and their lockfil
 dependencies as recorded in the triage; local install/compile/tests pass. Public tests
 require only an ephemeral local chain; no deployment secret is needed.
 
-Owner/legal actions: resolve SPDX/root-license inconsistency; review dependency
-maintenance; separately decide any future
-production network/custody policy. No current deployment or signing authority is granted by this audit.
+Publication scope: experimental reference code under the existing BSD/MIT grants.
+No unresolved license-scope decision blocks this cleanup. A future production
+network/custody policy remains separate; no deployment or signing authority is
+granted by this audit.
 
 
 ## Local validation evidence and storage

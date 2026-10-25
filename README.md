@@ -1,5 +1,8 @@
 # Qyoo Ethereum Registry and Minter
 
+Qyoo is maintained by **Pushplay LLC**. This repository is an **experimental**
+protocol, not a production-supported issuance service.
+
 This experimental protocol can issue a permanent ERC-721 ownership record for a 36-bit Qyoo visual ID. Scanning alone does not mint or establish ownership.
 
 The protocol rule is simple:
@@ -111,9 +114,10 @@ Qyoo ownership is permanent and has no annual fee. Future first-party resolver h
 
 ## Development
 
-The publication audit found outstanding npm development-tool advisories; see
-[AUDIT.md](AUDIT.md). Successful local compilation/test results must be obtained
-before a release. CI is configured, but an unexecuted workflow is not a pass.
+The prepared dependency-maintenance revision passed local compilation, all 28
+tests and its recorded npm advisory check; see [AUDIT.md](AUDIT.md). Those are
+dated results, not a current security guarantee. Hosted CI must pass on the PR
+revision before merge.
 
 
 Requirements:
@@ -129,7 +133,7 @@ npm run compile
 npm test
 ```
 
-The pinned development stack uses Hardhat 3.15.0, Solidity 0.8.26 targeting Cancun with optimizer runs set to 200, OpenZeppelin Contracts 5.6.1, ethers 6.17.0, and Mocha 11.8.0.
+The pinned development stack uses Hardhat 3.15.0, Solidity 0.8.26 targeting Cancun with optimizer runs set to 200, OpenZeppelin Contracts 5.6.1, ethers 6.17.0, and Mocha 12.0.3.
 
 There are intentionally no public network entries, RPC secrets, or deployer keys in the Hardhat configuration.
 
@@ -204,4 +208,13 @@ The legacy experiment and redesign decisions are documented in [docs/LEGACY_CONT
 
 ## License
 
-Original repository license: [BSD-3-Clause](LICENSE). The Solidity source files also contain MIT SPDX identifiers; this inconsistency requires owner clarification before redistribution claims. OpenZeppelin Contracts is a separate MIT-licensed dependency. No license header was silently replaced; see [AUDIT.md](AUDIT.md).
+Qyoo-owned code is covered by the repository’s [BSD-3-Clause license](LICENSE).
+Existing MIT SPDX grants in the four Solidity files are preserved; the root
+license does not revoke those file-level grants. Existing copyright notices and
+third-party terms remain in force. This cleanup does not transfer historical
+copyright ownership to Pushplay LLC or relicense third-party code.
+
+OpenZeppelin Contracts 5.6.1 remains MIT-licensed. See
+[third-party notices](THIRD_PARTY_NOTICES.md) and the retained
+[OpenZeppelin MIT license](LICENSES/OpenZeppelin-MIT.txt). Include applicable
+notices when redistributing source or compiled bundles.
