@@ -16,6 +16,20 @@ behavior changed, so the completed compile/28-test receipts below were retained
 without repetition. Qyoo / Pushplay LLC branding is current; historical
 copyright notices are unchanged.
 
+## Current CI advisory gate — 24 October 2026
+
+The [first hosted run](https://github.com/qyoocode/Qyoo-Contract-Eth/actions/runs/40147051054)
+passed compile/tests but failed `npm audit`. A narrow lockfile update advances
+`serialize-javascript` from 7.1.2 to 7.1.4 within Mocha’s existing `^7.1.1` range,
+closing GHSA-m5mm-p8h7-m29v. No direct dependency, contract or framework changed.
+Fresh local `npm run compile` and all 28 `npm test` cases pass with this lockfile.
+`npm audit --audit-level=high` still fails on Zod 3.25.76:
+GHSA-mrhx-c7xc-m3w5 propagates to seven reported package entries. This is one
+underlying high advisory, not seven independent flaws. No compatible Zod 3 patch
+is published; forcing Zod 4 would violate Hardhat/plugin dependency ranges.
+The audit gate stays enabled and this PR remains blocked from merge pending a
+compatible upstream fix. Older zero-advisory receipts below are historical.
+
 ## Verified source behavior and coverage
 
 Source review of `contracts/QyooRegistry.sol` establishes `tokenId <= 2**36-1`,
@@ -95,7 +109,7 @@ configuration or deployment keys were copied into this branch.
 
 Original BSD copyright retained. OpenZeppelin5.6.1 imports are package dependencies,
 not copied implementations; its MIT attribution must accompany redistributed
-bundles. Hardhat3.15.0, ethers6.17.0, OpenZeppelin5.6.1 and compiler configuration remain
+bundles. Hardhat 3.15.0, ethers6.17.0, OpenZeppelin5.6.1 and compiler configuration remain
 unchanged. The maintenance candidate updates Mocha, its plugin and their lockfile
 dependencies as recorded in the triage; local install/compile/tests pass. Public tests
 require only an ephemeral local chain; no deployment secret is needed.

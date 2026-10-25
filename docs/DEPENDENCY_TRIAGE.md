@@ -1,5 +1,25 @@
 # Development dependency advisory triage
 
+
+## CI follow-up — 24 October 2026
+
+- `serialize-javascript` 7.1.2→7.1.4 is a compatible lockfile-only patch under
+  Mocha 12.0.3’s `^7.1.1` range. It closes
+  [GHSA-m5mm-p8h7-m29v](https://github.com/advisories/GHSA-m5mm-p8h7-m29v),
+  whose first fixed release is 7.1.3.
+- [GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5)
+  marks Zod <4.6.6 affected. Hardhat 3.15.0 and its plugins require `^3.23.8`;
+  the npm registry’s newest 3.x is 3.25.76. There is no compatible patch to apply.
+  No forced major override, framework downgrade or advisory suppression was used.
+- Fresh Node 22.23.3 checks: compile PASS (cache current), 28 tests PASS,
+  `npm audit --audit-level=high` FAIL (seven entries caused by this one Zod
+  advisory; zero low/moderate/critical). Dependencies here are development tools;
+  this does not establish exploitable Solidity bytecode. **Merge stays blocked.**
+
+The original maintenance investigation below is dated evidence, not a claim that
+the current lockfile is advisory-free.
+
+
 Inspected 2026-10-18 from the isolated publication-audit branch. This is a
 maintenance candidate, not a release or a contract security certification.
 

@@ -116,8 +116,12 @@ Qyoo ownership is permanent and has no annual fee. Future first-party resolver h
 
 The prepared dependency-maintenance revision passed local compilation, all 28
 tests and its recorded npm advisory check; see [AUDIT.md](AUDIT.md). Those are
-dated results, not a current security guarantee. Hosted CI must pass on the PR
-revision before merge.
+dated results, not a current security guarantee. On 2026-10-24, compilation and
+all 28 tests still pass, but CI’s advisory gate is blocked by
+[GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5) in
+Hardhat’s Zod 3 dependency. No compatible patched Zod 3 release is available.
+The separate `serialize-javascript` issue is patched within its existing range.
+See [dependency triage](docs/DEPENDENCY_TRIAGE.md). Hosted CI must pass before merge.
 
 
 Requirements:
