@@ -1,6 +1,9 @@
-# Qyoo Ethereum Registry vNext
+# Qyoo Ethereum Registry and Minter
 
-Qyoo vNext gives every scanned 36-bit visual ID a permanent, independently readable ERC-721 ownership record.
+Qyoo is maintained by **Pushplay LLC**. This repository is an **experimental**
+protocol, not a production-supported issuance service.
+
+This experimental protocol can issue a permanent ERC-721 ownership record for a 36-bit Qyoo visual ID. Scanning alone does not mint or establish ownership.
 
 The protocol rule is simple:
 
@@ -8,7 +11,11 @@ The protocol rule is simple:
 
 If Qyoo operations disappear, existing holders can still prove ownership, use standard ERC-721 transfers, appoint/revoke a resolver controller, and change resolver pointers using ordinary Ethereum transactions. Only new issuance may stop.
 
-This repository contains local-development contracts only. Nothing here has been deployed to Ethereum, a public testnet, an L2, Cardano, or any other public chain.
+The contracts at public commit `bc3c4c3e2dc12b5f4a82411f6011662417c677d9`
+were deployed to Ethereum **Sepolia** (chain `11155111`). The
+[deployment record](docs/SEPOLIA.md) distinguishes verified testnet contracts
+from operational services. This repository does not establish a Mainnet
+release, a public minting service or consumer wallet functionality.
 
 ## Architecture
 
@@ -107,9 +114,19 @@ Qyoo ownership is permanent and has no annual fee. Future first-party resolver h
 
 ## Development
 
+The prepared dependency-maintenance revision passed local compilation, all 28
+tests and its recorded npm advisory check; see [AUDIT.md](AUDIT.md). Those are
+dated results, not a current security guarantee. On 2026-10-24, compilation and
+all 28 tests still pass, but CI’s advisory gate is blocked by
+[GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5) in
+Hardhat’s Zod 3 dependency. No compatible patched Zod 3 release is available.
+The separate `serialize-javascript` issue is patched within its existing range.
+See [dependency triage](docs/DEPENDENCY_TRIAGE.md). Hosted CI must pass before merge.
+
+
 Requirements:
 
-- Node.js 22 or newer
+- Node.js 22.13.0 or newer on a supported even-major release ([Hardhat support](https://hardhat.org/docs/reference/nodejs-support))
 - npm
 
 Install, compile, and test:
@@ -120,7 +137,7 @@ npm run compile
 npm test
 ```
 
-The pinned development stack uses Hardhat 3.15.0, Solidity 0.8.26 targeting Cancun with optimizer runs set to 200, OpenZeppelin Contracts 5.6.1, ethers 6.17.0, and Mocha 11.8.0.
+The pinned development stack uses Hardhat 3.15.0, Solidity 0.8.26 targeting Cancun with optimizer runs set to 200, OpenZeppelin Contracts 5.6.1, ethers 6.17.0, and Mocha 12.0.3.
 
 There are intentionally no public network entries, RPC secrets, or deployer keys in the Hardhat configuration.
 
@@ -185,14 +202,23 @@ See [docs/CROSS_CHAIN_NOTES.md](docs/CROSS_CHAIN_NOTES.md).
 
 ## Current limitations
 
-- No public deployment or independent audit has occurred.
+- Sepolia testnet deployment is verified; no independent security audit or Mainnet deployment is established here.
 - Admin, issuer, and treasury production custody/multisig policy is not selected.
 - Resolver client URI rules and malicious-content UX remain to be specified.
-- No official hosting subscription, marketplace, wallet UI, app RPC integration, bridge, tokenomics, or backend is implemented.
+- No official hosting subscription, marketplace, wallet UI, app RPC integration, bridge, tokenomics, or backend is implemented **in this repository**. Separate Qyoo products/services must be evaluated on their own evidence.
 - Informational EIP-2981 royalties are not included; ordinary transfer does not depend on a first-party marketplace.
 
 The legacy experiment and redesign decisions are documented in [docs/LEGACY_CONTRACT_AUDIT.md](docs/LEGACY_CONTRACT_AUDIT.md).
 
 ## License
 
-BSD 3-Clause. See [LICENSE](LICENSE).
+Qyoo-owned code is covered by the repository’s [BSD-3-Clause license](LICENSE).
+Existing MIT SPDX grants in the four Solidity files are preserved; the root
+license does not revoke those file-level grants. Existing copyright notices and
+third-party terms remain in force. This cleanup does not transfer historical
+copyright ownership to Pushplay LLC or relicense third-party code.
+
+OpenZeppelin Contracts 5.6.1 remains MIT-licensed. See
+[third-party notices](THIRD_PARTY_NOTICES.md) and the retained
+[OpenZeppelin MIT license](LICENSES/OpenZeppelin-MIT.txt). Include applicable
+notices when redistributing source or compiled bundles.
